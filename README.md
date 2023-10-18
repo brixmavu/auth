@@ -24,13 +24,13 @@ Create a .env file in the root directory of the project.
 Add the following environment variables to the .env file:
 
 ```bash
-SESSION_SECRET=your-session-secret
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_DATABASE=auth
+SESSION_SECRET=your-secret-key
+DB_HOST=your-database-host
+DB_USER=your-username
+DB_PASSWORD=your-password
+DB_DATABASE=your-database-name
 ```
-Replace your-session-secret with a secret key for session encryption and database credentials of your database.
+Replace your-session-secret with a secret key for session encryption and database credentials for your database.
 
 ### Usage
 
