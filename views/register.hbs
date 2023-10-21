@@ -1,6 +1,9 @@
 <h1 class="text-center">{{ title }}</h1>
 <div class="center">
     <form action="/users/register" method="POST">
+        {{#if error}}
+        <div class="error-message">{{error}}</div>
+        {{/if}}
         <p>
             <label for="email">Email:</label><br>
             <input type="email" id="email" name="email" required>
@@ -14,6 +17,6 @@
             <input type="password" id="confirmPassword" name="confirmPassword" required>
         </p>
         <button type="submit">Register</button>
+        <p><a href="login">You have an account already? Login Here</a></p>
     </form>
 </div>
-

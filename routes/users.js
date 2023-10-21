@@ -1,103 +1,93 @@
 var express = require('express');
 var router = express.Router();
-var bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt');
 var mysql = require('mysql');
-var config = require('../config');
+
+const config = require('../config')
 
 // Create a MySQL connection pool
-var pool = mysql.createPool(config);
+const pool = mysql.createPool(config);
 
-// GET login page
-router.get('/login', function(req, res, next) {
-  res.render('login', { title: 'Login' });
+/* GET login. */
+router.get('/login', function (req, res, next) {
+  res.render("login")
 });
+ 
+/* POST login. */
+router.post('/login', function (req, res, next) {
+  const { email, password } = req.body;
 
-// POST login data
-router.post('/login', function(req, res, next) {
-  var email = req.body.email;
-  var password = req.body.password;
-
-  // Perform login logic
-  pool.getConnection(function(err, connection) {
+  pool.getConnection(function (err, connection) {
     if (err) {
-      console.error('Error getting MySQL connection:', err);
-      return res.status(500).send('Internal Server Error');
+      console.error('Error acquiring connection from pool:', err);
+      return res.render('login', { error: 'An error occurred. Please try again later.' });
     }
 
-    var query = 'SELECT * FROM users WHERE email = ?';
-    var values = [email];
-
-    connection.query(query, values, function(err, results) {
-      connection.release(); // Release the connection
+    connection.query('SELECT * FROM users WHERE email = ?', email, function (err, results) {
+      connection.release();
 
       if (err) {
-        console.error('Error executing MySQL query:', err);
-        return res.status(500).send('Internal Server Error');
+        console.error('Error during user login:', err);
+        return res.render('login', { error: 'Login failed. Please try again.' });
       }
 
-      if (results.length === 1) {
-        var hashedPassword = results[0].password;
-        bcrypt.compare(password, hashedPassword, function(err, isMatch) {
-          if (err) {
-            console.error('Error comparing passwords:', err);
-            return res.status(500).send('Internal Server Error');
-          }
-          if (isMatch) {
-            //res.send('Login successful');
-            res.render('index', {
-              title: 'Express',
-              session: req.session
-            })
-          } else {
-            res.send('Invalid email or password');
-          }
-        });
-      } else {
-        res.send('Invalid email or password');
+      if (results.length === 0) {
+        return res.render('login', { error: 'Invalid email or password.' });
       }
+
+      const user = results[0];
+      bcrypt.compare(password, user.password, function (err, match) {
+        if (err) {
+          console.error('Error during password comparison:', err);
+          return res.render('login', { error: 'An error occurred. Please try again later.' });
+        }
+
+        if (!match) {
+          return res.render('login', { error: 'Invalid email or password.' });
+        }
+
+        req.session.authenticated = true; // Set the session as authenticated
+        req.session.user = user;
+        res.redirect('/'); // Redirect to the home page upon successful login
+      });
     });
   });
 });
 
-// GET registration page
-router.get('/register', function(req, res, next) {
-  res.render('register', { title: 'Register' });
+/* GET register. */
+router.get('/register', function (req, res, next) {
+  res.render("register")
 });
 
-// POST registration data
-router.post('/register', function(req, res, next) {
-  var email = req.body.email;
-  var password = req.body.password;
+router.post('/register', function (req, res, next) {
+  const { name, email, password } = req.body;
 
-  // Hash the password
-  bcrypt.hash(password, 10, function(err, hashedPassword) {
+  bcrypt.hash(password, 10, function (err, hashedPassword) {
     if (err) {
-      console.error('Error hashing password:', err);
-      return res.status(500).send('Internal Server Error');
+      console.error('Error during password hashing:', err);
+      return res.render('register', { error: 'An error occurred. Please try again later.' });
     }
 
-    // Perform registration logic
-    pool.getConnection(function(err, connection) {
+    const newUser = {
+      email,
+      password: hashedPassword,
+    };
+
+    pool.getConnection(function (err, connection) {
       if (err) {
-        console.error('Error getting MySQL connection:', err);
-        return res.status(500).send('Internal Server Error');
+        console.error('Error acquiring connection from pool:', err);
+        return res.render('register', { error: 'An error occurred. Please try again later.' });
       }
 
-      var query = 'INSERT INTO users (email, password) VALUES (?, ?)';
-      var values = [email, hashedPassword];
-
-      connection.query(query, values, function(err, results) {
-        connection.release(); // Release the connection
+      connection.query('INSERT INTO users SET ?', newUser, function (err, results) {
+        connection.release();
 
         if (err) {
-          console.error('Error executing MySQL query:', err);
-          return res.status(500).send('Internal Server Error');
+          console.error('Error during user register:', err);
+          return res.render('register', { error: 'register failed. Please try again.' });
         }
 
-        //res.send('Registration successful');
-        res.render('login', {
-          title: 'Login',
-        })
+        res.redirect('/users/login'); 
       });
     });
   });

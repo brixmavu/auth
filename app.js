@@ -11,6 +11,19 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 
+// Middleware to check if user is authenticated
+function checkAuth(req, res, next) {
+  const isRootPath = req.url === '/';
+  const isAuthenticated = req.session && req.session.authenticated;
+
+  if (isRootPath && !isAuthenticated) {
+    res.redirect('/users/login');
+    return;
+  }
+
+  next();
+}
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
@@ -28,6 +41,7 @@ app.use(session({
     maxAge: 5 * 60 * 1000 // 5 minutes
   }
 }));
+app.use(checkAuth);
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

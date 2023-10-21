@@ -1,14 +1,8 @@
 var express = require('express');
 var router = express.Router();
-//var session = require('express-session');
-
-function requireLogin(req, res, next) {
-  const { session, username } = req;
-  session && username ? next() : res.redirect('/users/login');
-}
 
 /* GET home page. */
-router.get('/', requireLogin, function(req, res, next) {
+router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
